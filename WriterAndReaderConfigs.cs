@@ -6,7 +6,7 @@ namespace PrinterServiceToWeb
 {
     public class WriterAndReaderConfigs
     {
-        private const string docPath = @"c:\Quality\ConfigEtiquetas.conf";
+        private const string docPath = @"c:\Quality\config-label-printer.ini";
 
         public void WriterConfig(string printerConfig)
         {
