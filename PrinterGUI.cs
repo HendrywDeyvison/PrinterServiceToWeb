@@ -1,9 +1,9 @@
-﻿using Microsoft.Win32;
-using System;
-using System.Diagnostics;
+﻿using System;
 using System.Drawing;
+using System.IO;
 using System.Printing;
 using System.Windows.Forms;
+using MaterialDesign.Icons;
 
 namespace PrinterServiceToWeb
 {
@@ -14,8 +14,14 @@ namespace PrinterServiceToWeb
         private Button _saveButton;
         private NotifyIcon _trayIcon;
         private WriterAndReaderConfigs _writerAndReaderConfigs;
-        private const string RegistryKeyPath = @"SOFTWARE\ZPLPrinterService";
-        private const string ValueName = "SelectedPrinter";
+        private Updater _updater;
+
+        static string localPath = @"C:\Quality\PrinterServiceToWeb\service";
+        static string versionFile = "versao.txt";
+
+        static string localVersion = File.Exists(Path.Combine(localPath, versionFile))
+                ? File.ReadAllText(Path.Combine(localPath, versionFile)).Trim()
+                : "0.0.0";
 
         public PrinterGUI(WebSocketServer wsServer)
         {
@@ -43,10 +49,13 @@ namespace PrinterServiceToWeb
 
         private void InitializeComponents()
         {
-            this.Text = "ZPL/EPL Printer Configuration";
+
+            this.Icon = new Icon("quality_32x32.ico");
+            this.Text = $"ZPL/EPL Printer Configuration  Version:{localVersion}";
             this.Size = new Size(400, 200);
             this.FormBorderStyle = FormBorderStyle.FixedSingle;
             this.MaximizeBox = false;
+            this.MinimizeBox = false;
             this.StartPosition = FormStartPosition.CenterScreen;
 
             _printerComboBox = new ComboBox
@@ -71,18 +80,30 @@ namespace PrinterServiceToWeb
         private void SetupTrayIcon()
         {
 
+            var contextMenu = new ContextMenuStrip();
+            var settingsIcon = Properties.Resources.settings.ToBitmap();
+            var updateIcon = Properties.Resources.update.ToBitmap();
+            var exitIcon = Properties.Resources.exit.ToBitmap();
+
+            _updater = new Updater();
+
             _trayIcon = new NotifyIcon
             {
-                Icon = SystemIcons.Application,
-                Text = "ZPL Printer Service",
+                Icon = new Icon("quality_32x32.ico"),
+                Text = $"ZPL Printer Service Version:{localVersion}",
                 Visible = true
             };
 
             _trayIcon.DoubleClick += ((sender, e) => ShowForm());
 
-            var contextMenu = new ContextMenuStrip();
-            contextMenu.Items.Add("Open Config", null, (sender, e) => ShowForm());
-            contextMenu.Items.Add("Exit", null, (sender, e) => Application.Exit());
+
+            contextMenu.Items.Add($"ZPL Printer Service Version:{localVersion}", new Icon("quality_32x32.ico").ToBitmap()).Enabled=false;
+            
+            contextMenu.Items.Add(new ToolStripSeparator());
+
+            contextMenu.Items.Add("Configurações", settingsIcon, (sender, e) => ShowForm());
+            contextMenu.Items.Add("Atualização", updateIcon, (sender, e) => _updater.QuestionCheckUpdateService());
+            contextMenu.Items.Add("Sair/Parar", exitIcon, (sender, e) => Application.Exit());
 
             _trayIcon.ContextMenuStrip = contextMenu;
         }
@@ -126,18 +147,6 @@ namespace PrinterServiceToWeb
 
                     _writerAndReaderConfigs.WriterConfig(_wsServer.LabelPrinter);
 
-                    //Registry.CurrentUser.DeleteSubKeyTree(@"SOFTWARE\ZPLPrinterService"); //Apagar, só para teste!
-
-                    /*Registry.SetValue(
-                        @"HKEY_CURRENT_USER\SOFTWARE\ZPLPrinterService",
-                        "SelectedPrinter",
-                        _wsServer.LabelPrinter
-                    );*/
-
-                    //MessageBox("Success", "Title", 5000);
-
-                    // MessageBox.Show($"Printer saved: {_wsServer.LabelPrinter}", "Success");
-
                     this.Close();
                 }
                 catch (Exception e)
@@ -164,6 +173,18 @@ namespace PrinterServiceToWeb
             }
 
             base.OnFormClosing(e);
+        }
+
+        private void InitializeComponent()
+        {
+            this.SuspendLayout();
+            // 
+            // PrinterGUI
+            // 
+            this.ClientSize = new System.Drawing.Size(282, 238);
+            this.Name = "PrinterGUI";
+            this.ResumeLayout(false);
+
         }
     }
 }

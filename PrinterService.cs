@@ -8,6 +8,7 @@ namespace PrinterServiceToWeb
     {
         private WebSocketServer _wsServer;
         private Thread _guiThread;
+        private Updater _updater;
 
         public PrinterService()
         {
@@ -18,6 +19,10 @@ namespace PrinterServiceToWeb
 
         public void StartService()
         {
+            _updater = new Updater();
+
+            _updater.CheckAndUpdateService();
+
             this.OnStart(null); // Chama o método protegido
         }
 
